@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { VoiceSampleStatus, CloneJobStatus } from 'shared-types';
+import { 
+  VoiceSampleStatus, 
+  CloneJobStatus 
+} from 'shared-types';
 import VoiceUploader from '../components/voice-clone/VoiceUploader';
 import ProcessingStatus from '../components/voice-clone/ProcessingStatus';
 import TextInput from '../components/voice-clone/TextInput';
@@ -23,46 +26,39 @@ const VoiceClonePage: React.FC = (): JSX.Element => {
   const { 
     currentSample, 
     currentJob, 
-    isLoading, 
+    isLoading: _isLoading, // Prefix with _ to indicate it's intentionally unused
     error, 
     setCurrentSample,
     setCurrentJob,
     setError
   } = useAppContext();
 
-  // Local state for polling status
-  const [pollingSample, setPollingStatus] = useState<boolean>(false);
-  const [pollingJob, setPollingJob] = useState<boolean>(false);
+  // Local state for polling status - prefixed with _ to indicate they're intentionally unused
+  const [_pollingSample, setPollingStatus] = useState<boolean>(false);
+  const [_pollingJob, setPollingJob] = useState<boolean>(false);
 
   // If a sampleId is provided in the URL, fetch the sample on component mount
   useEffect(() => {
     if (sampleId && !currentSample) {
       fetchSample(sampleId);
     }
-  }, [sampleId]);
+  }, [sampleId, currentSample]); // Add currentSample to dependency array
 
   /**
    * Fetch a voice sample by ID
-   * @param id The ID of the sample to fetch
+   * @param sampleId The ID of the sample to fetch
    */
-  const fetchSample = async (id: string) => {
+  const fetchSample = async (sampleId: string) => {
     // This would typically call an API service to fetch the sample
-    console.log(`Fetching sample with ID: ${id}`);
+    console.log(`Fetching sample with ID: ${sampleId}`);
     // For now, we'll simulate fetching by setting a mock sample
     setCurrentSample({
-      id,
-      userId: 'user123',
-      fileUrl: 'https://example.com/sample.wav',
-      status: VoiceSampleStatus.READY,
+      id: sampleId,
+      userId: 'user123', // Add required userId
+      fileUrl: `https://example.com/samples/${sampleId}.wav`, // Add required fileUrl
+      status: VoiceSampleStatus.PROCESSING,
       createdAt: new Date().toISOString()
     });
-  };
-
-  /**
-   * Start polling for sample status updates
-   * @param id The ID of the sample to poll for
-   */
-  const startSamplePolling = (id: string) => {
     setPollingStatus(true);
     // In a real implementation, this would periodically call the API
     // to check the sample processing status until it's ready or failed
@@ -70,22 +66,24 @@ const VoiceClonePage: React.FC = (): JSX.Element => {
 
   /**
    * Start polling for job status updates
-   * @param id The ID of the job to poll for
+   * @param jobId The ID of the job to poll for
    */
-  const startJobPolling = (id: string) => {
+  const startJobPolling = (jobId: string) => {
     setPollingJob(true);
     // In a real implementation, this would periodically call the API
     // to check the job status until it's complete or failed
+    console.log(`Starting job polling for job ID: ${jobId}`);
   };
 
   /**
    * Handle successful sample upload
-   * @param id The ID of the newly uploaded sample
+   * @param sampleId The ID of the newly uploaded sample
    */
-  const handleSampleUploaded = (id: string) => {
+  const handleSampleUploaded = (sampleId: string) => {
     // Navigate to the sample-specific URL
-    navigate(`/voice-clone/${id}`, { replace: true });
-    startSamplePolling(id);
+    navigate(`/voice-clone/${sampleId}`, { replace: true });
+    // In a real implementation, we would start polling for the sample status
+    console.log(`Sample uploaded with ID: ${sampleId}`);
   };
 
   /**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 
 /**
@@ -12,161 +12,146 @@ interface AudioPlayerProps {
 /**
  * AudioPlayer component for playing and visualizing the generated audio
  * Uses WaveSurfer.js to display waveform visualization
- * 
- * @param props Component properties
- * @returns The AudioPlayer component
  */
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ 
-  audioUrl 
-}): JSX.Element => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUrl }): JSX.Element => {
   // Component state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [volume, setVolume] = useState<number>(1);
   const [waveformReady, setWaveformReady] = useState<boolean>(false);
-  
+
   // Refs
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
-  
+
+  /**
+   * Format time in seconds to MM:SS format
+   */
+  const formatTime = useCallback((timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  }, []);
+
+  /**
+   * Toggle play/pause of the audio
+   */
+  const togglePlayPause = useCallback((): void => {
+    if (wavesurferRef.current) {
+      wavesurferRef.current.playPause();
+    }
+  }, []);
+
+  /**
+   * Handle volume change
+   */
+  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement> | number): void => {
+    const newVolume = typeof e === 'number' ? e : parseFloat((e as React.ChangeEvent<HTMLInputElement>).target.value);
+    setVolume(newVolume);
+    if (wavesurferRef.current) {
+      wavesurferRef.current.setVolume(newVolume);
+    }
+  }, []);
+
+  /**
+   * Handle download of the audio file
+   */
+  const handleDownload = useCallback((): void => {
+    if (audioUrl) {
+      const link = document.createElement('a');
+      link.href = audioUrl;
+      link.download = 'voice-clone-audio.mp3';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }, [audioUrl]);
+
   /**
    * Initialize WaveSurfer instance on component mount
    * and clean up on unmount
    */
   useEffect(() => {
-    if (waveformRef.current) {
-      // Create WaveSurfer instance
-      const wavesurfer = WaveSurfer.create({
-        container: waveformRef.current,
-        waveColor: '#3b82f6',
-        progressColor: '#1d4ed8',
-        cursorColor: '#9ca3af',
-        barWidth: 2,
-        barRadius: 3,
-        barGap: 2,
-        height: 80,
-        responsive: true,
-        normalize: true,
-      });
-      
-      // Save to ref
-      wavesurferRef.current = wavesurfer;
-      
-      // Load audio file
-      wavesurfer.load(audioUrl);
-      
-      // Event handlers
-      wavesurfer.on('ready', () => {
-        setWaveformReady(true);
-        setDuration(wavesurfer.getDuration());
-      });
-      
-      wavesurfer.on('play', () => setIsPlaying(true));
-      wavesurfer.on('pause', () => setIsPlaying(false));
-      wavesurfer.on('finish', () => setIsPlaying(false));
-      
-      wavesurfer.on('audioprocess', () => {
-        setCurrentTime(wavesurfer.getCurrentTime());
-      });
-      
-      // Set initial volume
-      wavesurfer.setVolume(volume);
-      
-      // Cleanup on unmount
-      return () => {
-        wavesurfer.destroy();
-      };
+    if (!waveformRef.current) {
+      return;
     }
-  }, [audioUrl]);
-  
-  /**
-   * Toggle play/pause
-   */
-  const togglePlayPause = () => {
-    if (wavesurferRef.current) {
-      wavesurferRef.current.playPause();
-    }
-  };
-  
-  /**
-   * Update volume and apply to wavesurfer
-   * @param value New volume value (0-1)
-   */
-  const handleVolumeChange = (value: number) => {
-    setVolume(value);
-    if (wavesurferRef.current) {
-      wavesurferRef.current.setVolume(value);
-    }
-  };
-  
-  /**
-   * Format time in seconds to MM:SS format
-   * @param time Time in seconds
-   * @returns Formatted time string
-   */
-  const formatTime = (time: number): string => {
-    if (isNaN(time)) return '00:00';
+
+    // Create WaveSurfer instance
+    const wavesurfer = WaveSurfer.create({
+      container: waveformRef.current,
+      waveColor: '#3b82f6',
+      progressColor: '#1d4ed8',
+      cursorColor: '#9ca3af',
+      barWidth: 2,
+      barRadius: 3,
+      barGap: 2,
+      height: 80,
+      normalize: true,
+    });
+
+    // Save to ref
+    wavesurferRef.current = wavesurfer;
+
+    // Load audio file
+    wavesurfer.load(audioUrl);
+
+    // Event handlers
+    const updateTime = () => {
+      setCurrentTime(wavesurfer.getCurrentTime());
+    };
+
+    const readyHandler = () => {
+      setWaveformReady(true);
+      setDuration(wavesurfer.getDuration());
+    };
+
+    const playHandler = () => setIsPlaying(true);
+    const pauseHandler = () => setIsPlaying(false);
+    const finishHandler = () => setIsPlaying(false);
+    const audioProcessHandler = updateTime;
+
+    // Add event listeners
+    wavesurfer.on('ready', readyHandler);
+    wavesurfer.on('play', playHandler);
+    wavesurfer.on('pause', pauseHandler);
+    wavesurfer.on('finish', finishHandler);
+    wavesurfer.on('audioprocess', audioProcessHandler);
     
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-  
-  /**
-   * Handle direct download of the audio file
-   */
-  const handleDownload = () => {
-    // Create a temporary anchor element
-    const anchor = document.createElement('a');
-    anchor.href = audioUrl;
-    anchor.download = 'voice-clone.wav'; // Default filename
-    anchor.click();
-  };
+    // Set initial volume
+    wavesurfer.setVolume(volume);
+
+    // Clean up on unmount
+    return () => {
+      // No need to explicitly remove listeners as destroy() will clean them up
+      wavesurfer.destroy();
+    };
+  }, [audioUrl, volume]);
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold mb-4">Your Cloned Voice</h2>
-      <p className="text-gray-600 mb-6">
-        Listen to the generated speech or download the audio file.
-      </p>
-      
+    <div className="bg-white rounded-lg shadow-md p-4 w-full max-w-2xl">
       {/* Waveform visualization */}
-      <div className="mb-4 bg-gray-50 p-4 rounded-lg">
-        <div ref={waveformRef} className="w-full"></div>
-        
-        {/* Loading indicator */}
-        {!waveformReady && (
-          <div className="flex justify-center items-center py-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        )}
-      </div>
-      
-      {/* Player controls */}
-      <div className="flex flex-col space-y-4">
-        {/* Playback controls */}
-        <div className="flex items-center space-x-4">
-          {/* Play/pause button */}
-          <button
-            onClick={togglePlayPause}
-            className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center focus:outline-none hover:bg-blue-600 transition"
-            disabled={!waveformReady}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m-9-9h18v14H5V4z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          </button>
-          
+      <div ref={waveformRef} className="mb-4" />
+
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={togglePlayPause}
+          className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? (
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
+
+        <div className="flex-1 mx-4">
           {/* Time display */}
           <div className="text-sm text-gray-600">
             {formatTime(currentTime)} / {formatTime(duration)}
@@ -183,7 +168,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               max="1"
               step="0.01"
               value={volume}
-              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              onChange={(e) => handleVolumeChange(e)}
               className="w-24"
               disabled={!waveformReady}
             />

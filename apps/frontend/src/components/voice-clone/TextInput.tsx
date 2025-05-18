@@ -19,11 +19,13 @@ interface TextInputProps {
  * @returns The TextInput component
  */
 const TextInput: React.FC<TextInputProps> = ({
-  sampleId,
   onJobCreated
 }): JSX.Element => {
   // Access global app context
   const { setIsLoading, setError } = useAppContext();
+  
+  // sampleId is passed to the component but not used in this version
+  // It's kept in the props for future use
   
   // Local state
   const [text, setText] = useState<string>('');

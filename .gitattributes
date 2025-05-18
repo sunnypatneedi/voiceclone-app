@@ -1,0 +1,40 @@
+# Auto detect text files and perform LF normalization
+* text=auto eol=lf
+
+# Binary files that should not be modified
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.mp4 binary
+*.webm binary
+*.wav binary
+*.mp3 binary
+*.m4a binary
+*.aac binary
+*.ogg binary
+
+# Don't ignore files in git diff for these file types
+*.css diff=css
+*.scss diff=css
+*.less diff=css
+*.html diff=html
+*.js diff=javascript
+*.jsx diff=javascript
+*.ts diff=typescript
+*.tsx diff=typescript
+*.json diff=json
+*.md diff=markdown
+*.yaml diff=yaml
+*.yml diff=yaml
+
+# Define the union strategy for common file types
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf
+*.{ps1,psm1,psd1} text eol=crlf

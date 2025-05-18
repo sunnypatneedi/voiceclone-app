@@ -1,0 +1,17 @@
+# Default owners for everything in the repo
+* @your-github-username
+
+# Specific paths can have different owners
+/apps/frontend @frontend-team
+/packages/backend @backend-team
+
+# Documentation
+/docs @docs-team
+
+# Configuration files
+/.github @devops-team
+*.yaml @devops-team
+*.yml @devops-team
+
+# Security files
+SECURITY.md @security-team

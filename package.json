@@ -1,0 +1,43 @@
+{
+  "name": "voiceclone-app",
+  "version": "1.0.0",
+  "description": "Voice Clone Application - Clone your voice and convert text to speech",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{js,ts,tsx,md}\"",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sunnypatneedi/voiceclone-app.git"
+  },
+  "keywords": [
+    "voice",
+    "clone",
+    "tts",
+    "text-to-speech",
+    "cartesia",
+    "pipecat"
+  ],
+  "author": "Sunny Patneedi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sunnypatneedi/voiceclone-app/issues"
+  },
+  "homepage": "https://github.com/sunnypatneedi/voiceclone-app#readme",
+  "devDependencies": {
+    "prettier": "^3.0.0",
+    "turbo": "^1.10.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
